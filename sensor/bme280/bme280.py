@@ -12,8 +12,11 @@ from machine import I2C
 BME280_I2C_ADDR = const(0x76)
 
 class BME280():
-    def __init__(self, i2c):
+    def __init__(self, i2c, addr = BME280_I2C_ADDR):
         self.i2c = i2c
+        self.addr = addr
+        self.tb = bytearray(1)
+        self.rb = bytearray(1)
         self.dig_T1 = self.get2Reg(0x88)
         self.dig_T2 = self.short(self.get2Reg(0x8A))
         self.dig_T3 = self.short(self.get2Reg(0x8C))
@@ -48,32 +51,25 @@ class BME280():
         self.H = 0
         self.version = '1.0'
 
-    def	short(self,	dat):
+    def	short(self, dat):
         if dat > 32767:
             return dat - 65536
         else:
             return dat
 	
     # set reg
-    def	setReg(self, reg, dat):
-        buf	= bytearray(2)
-        buf[0] = reg
-        buf[1] = dat
-        self.i2c.writeto(BME280_I2C_ADDR, buf)
-		
+    def setReg(self, reg, dat):
+        self.tb[0] = dat
+        self.i2c.writeto_mem(self.addr, reg, self.tb)
+
     # get reg
-    def	getReg(self, reg):
-        buf	= bytearray(1)
-        buf[0] = reg
-        self.i2c.writeto(BME280_I2C_ADDR, buf)
-        t =	self.i2c.readfrom(BME280_I2C_ADDR, 1)
-        return t[0]
+    def getReg(self, reg):
+        self.i2c.readfrom_mem_into(self.addr, reg, self.rb)
+        return self.rb[0]
 	
     # get two reg
     def	get2Reg(self, reg):
-        a = self.getReg(reg)
-        b = self.getReg(reg + 1)
-        return a + b*256
+        return self.getReg(reg) + self.getReg(reg+1) * 256
 
     def get(self):
         adc_T = (self.getReg(0xFA)<<12) + (self.getReg(0xFB)<<4) + (self.getReg(0xFC)>>4)
@@ -136,4 +132,3 @@ class BME280():
     # normal mode
     def poweron(self):
         self.setReg(0xF4, 0x2F)
-
