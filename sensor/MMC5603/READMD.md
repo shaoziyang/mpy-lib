@@ -22,6 +22,7 @@ m = MMC5603(i2c)
 
 while 1:
     sleep_ms(500)
-    print(m.x(), m.y(), m.z())
+    m.update()
+    print(m.x, m.y, m.z)
 
 ```
