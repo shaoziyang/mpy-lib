@@ -4,7 +4,7 @@
     Author: shaoziyang
     Date:   2018.2
 
-    https://www.micropython.org.cn
+    https://github.com/shaoziyang/mpy-lib
 
 '''
 from time import sleep_ms
@@ -36,7 +36,6 @@ class I2C_LCD1602():
 
     def send(self, dat):
         d=(dat&0xF0)|self.BK|self.RS
-        self.setReg(d)
         self.setReg(d|0x04)
         self.setReg(d)
 
@@ -51,7 +50,7 @@ class I2C_LCD1602():
         self.send(dat<<4)
 
     def autoaddr(self):
-        for i in range(32, 63):
+        for i in range(32, 64):
             try:
                 if self.i2c.readfrom(i, 1):
                     return i
@@ -87,43 +86,33 @@ class I2C_LCD1602():
     def shr(self):
         self.setcmd(0x1C)
 
-    def char(self, ch, x=-1, y=0):
-        if x>=0:
-            a=0x80
-            if y>0:
-                a=0xC0
-            self.setcmd(a+x)
-        self.setdat(ch)
-
-    def puts(self, s, x=0, y=0):
-        if type(s) is not str:
-            s = str(s)
-        if len(s)>0:
-            self.char(ord(s[0]),x,y)
-            for i in range(1, len(s)):
-                self.char(ord(s[i]))
-
     def newline(self):
         self.px = 0
-        if self.py < 1:
-            self.py += 1
-        else:
-            for i in range(16):
-                self.char(self.pb[i], i)
-                self.char(32, i, 1)
-                self.pb[i] = 32
+        self.py += 1
 
-    def print(self, s):
+    def print(self, s, end='\n'):
         if type(s) is not str:
             s = str(s)
+        s = s + end
         for i in range(len(s)):
             d = ord(s[i])
             if d == ord('\n'):
                 self.newline()
+            elif d == ord('\r'):
+                self.px = 0
             else:
+                if self.py > 1:
+                    self.py = 1
+                    self.clear()
+                    for j in range(16):
+                        self.char(self.pb[j], j)
+                        self.pb[j] = 32
+                
                 self.char(d, self.px, self.py)
+                self.pb[self.px] = d
                 if self.py:
                     self.pb[self.px] = d
                 self.px += 1
                 if self.px > 15:
                     self.newline()
+
