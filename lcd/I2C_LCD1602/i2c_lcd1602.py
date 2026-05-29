@@ -17,17 +17,12 @@ class I2C_LCD1602():
         self.buf = bytearray(1)
         self.BK, self.RS, self.E = 0x08, 0x00, 0x04
         self.ADDR = addr if addr else self.autoaddr()
-        self.setcmd(0x33)
-        sleep_ms(5)
-        self.send(0x30)
-        sleep_ms(5)
-        self.send(0x20)
-        sleep_ms(5)
-        for i in [0x28, 0x0C, 0x06, 0x01]:
+        for i in [0x33, 0x32, 0x28, 0x0C, 0x06, 0x01]:
             self.setcmd(i)
+            sleep_ms(5)
         self.px, self.py = 0, 0
-        self.pb = bytearray(16)
-        self.version='2.1'
+        self.pb = bytearray(' '*16, '')
+        self.version='2.2'
 
     def setReg(self, dat):
         self.buf[0] = dat
@@ -66,12 +61,11 @@ class I2C_LCD1602():
 
     def clear(self):
         self.setcmd(1)
+        self.px = 0
+        self.py = 0
 
     def backlight(self, on):
-        if on:
-            self.BK=0x08
-        else:
-            self.BK=0
+        self.BK = 8 if on else 0
         self.setcmd(0)
 
     def on(self):
@@ -85,6 +79,22 @@ class I2C_LCD1602():
 
     def shr(self):
         self.setcmd(0x1C)
+
+    def char(self, ch, x=-1, y=0):
+        if x>=0:
+            a=0x80
+            if y>0:
+                a=0xC0
+            self.setcmd(a+x)
+        self.setdat(ch)
+
+    def puts(self, s, x=0, y=0):
+        if type(s) is not str:
+            s = str(s)
+        if len(s)>0:
+            self.char(ord(s[0]),x,y)
+            for i in range(1, len(s)):
+                self.char(ord(s[i]))
 
     def newline(self):
         self.px = 0
