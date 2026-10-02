@@ -26,14 +26,16 @@ class PCF8563():
         self.rb = bytearray(1)
         self.buf = bytearray(7)
         self.DT = [0] * 8
+        self.setReg(PCF8563_REG_CTRL1, 0)  # start rtc
+        self.setReg(PCF8563_REG_CTRL2, 0)  # disable int
 
     # set reg
-    def	setReg(self, reg, dat):
+    def setReg(self, reg, dat):
         self.tb[0] = dat
         self.i2c.writeto_mem(PCF8563_I2C_ADDRESS, reg, self.tb)
 
     # get reg
-    def	getReg(self, reg):
+    def getReg(self, reg):
         self.i2c.readfrom_mem_into(PCF8563_I2C_ADDRESS, reg, self.rb)
         return self.rb[0]
 
@@ -86,7 +88,7 @@ class PCF8563():
             self.setReg(PCF8563_REG_SECOND, self.DecToHex(second%60))
 
     def datetime(self, DT=None):
-        if DT == None:
+        if DT == None: # get
             self.i2c.readfrom_mem_into(PCF8563_I2C_ADDRESS, PCF8563_REG_SECOND, self.buf)
             self.DT[0] = self.HexToDec(self.buf[6]) + 2000
             self.DT[1] = self.HexToDec(self.buf[5]%32)
@@ -97,7 +99,7 @@ class PCF8563():
             self.DT[6] = self.HexToDec(self.buf[0]%128)
             self.DT[7] = 0
             return self.DT
-        else:
+        else:          # set
             self.buf[0] = self.DecToHex(DT[6]%60)    # second
             self.buf[1] = self.DecToHex(DT[5]%60)    # minute
             self.buf[2] = self.DecToHex(DT[4]%24)    # hour
@@ -106,4 +108,3 @@ class PCF8563():
             self.buf[5] = self.DecToHex(DT[1]%13)    # month
             self.buf[6] = self.DecToHex(DT[0]%100)   # year
             self.i2c.writeto_mem(PCF8563_I2C_ADDRESS, PCF8563_REG_SECOND, self.buf) 
-            
